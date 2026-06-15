@@ -1,12 +1,50 @@
-# FOMEZERO
-O FOMEZERO é um site/aplicativo desenvolvido com o objetivo de facilitar a escolha de restaurantes, cafeterias, confeitarias e lanchonetes de forma rápida, organizada e prática. 
+# FOMEZERO — Frontend
 
-O usuário realiza um cadastro utilizando e-mail e senha e, após acessar o sistema, já pode utilizar todas as funcionalidades disponíveis na plataforma. Na página inicial, o aplicativo apresenta as categorias gastronômicas e os filtros de pesquisa, permitindo que o usuário personalize sua busca de acordo com suas preferências. Caso a pessoa deseje encontrar uma hamburgueria próxima e com preço acessível, por exemplo, basta selecionar a categoria desejada e aplicar os filtros correspondentes.
+O **FOMEZERO** é uma aplicação web desenvolvida para facilitar a busca e a escolha de restaurantes, lanchonetes, cafeterias, confeitarias e outros estabelecimentos gastronômicos.
 
-Depois que os filtros são definidos, o sistema realiza a busca e apresenta os resultados organizados principalmente pelas avaliações dos usuários. Os restaurantes mais bem avaliados aparecem em destaque, aumentando a confiança do cliente no momento da escolha.
+A proposta do projeto é oferecer uma interface simples, visual e intuitiva, permitindo que o usuário navegue por categorias, visualize restaurantes, aplique filtros de busca e consulte informações como avaliações, faixa de preço, tempo estimado e cardápio.
 
+Este repositório contém a parte **frontend** da aplicação, desenvolvida com **HTML5, CSS3 e JavaScript**.
 
-# Tecnologias utilizadas
-1. HTML5
-2. CSS3
-3. JavaScript
+---
+
+## Objetivo do projeto
+
+O objetivo do FOMEZERO é ajudar o usuário a encontrar opções de alimentação de forma mais rápida e organizada.
+
+Por meio da interface, o usuário pode visualizar restaurantes por categoria, consultar informações principais de cada estabelecimento e acessar os itens disponíveis no cardápio.
+
+---
+
+## Funcionalidades
+
+- Tela inicial de apresentação da aplicação;
+- Cadastro e login visual de usuário;
+- Listagem de restaurantes;
+- Organização por categorias gastronômicas;
+- Filtros de busca;
+- Visualização de restaurantes com avaliação, faixa de preço e tempo estimado;
+- Modal com detalhes do restaurante;
+- Exibição de itens do cardápio;
+- Tela de favoritos;
+- Tela de suporte;
+- Integração com backend por meio de requisições HTTP.
+
+---
+
+## Tecnologias utilizadas
+
+- HTML5
+- CSS3
+- JavaScript
+
+---
+
+## Estrutura do projeto
+
+```text
+fomezero-frontend/
+└── src/
+    ├── index.html
+    ├── style.css
+    └── script.js
