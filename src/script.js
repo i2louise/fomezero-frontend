@@ -294,92 +294,284 @@ function updateSlider(el) {
 }
 
 function applyFilter() {
-  const catMap = { 'Snacks':'lanche', 'Almoço':'almoco', 'Vegano':'vegana', 'Doces':'doces', 'Drinks':'drinks' };
-  const activeCats = [];
-  document.querySelectorAll('.filter-cat.active .filter-cat-label').forEach(el => {
-    const key = catMap[el.textContent.trim()];
-    if (key) activeCats.push(key);
-  });
+    const catMap = {
+        'Snacks': 'lanche',
+        'Almoço': 'almoco',
+        'Vegano': 'vegana',
+        'Doces': 'doces',
+        'Drinks': 'drinks'
+    };
 
-  const slider   = document.getElementById('price-slider');
-  const maxPrice = parseInt(slider.value);
-  filtroPrecoMaximo = maxPrice;
+    // Armazena todas as categorias selecionadas.
+    const activeCats = [];
 
-  const activeChips = [];
-  document.querySelectorAll('.chip.active').forEach(el => activeChips.push(el.textContent.trim().toLowerCase()));
+    document
+        .querySelectorAll(
+            '.filter-cat.active .filter-cat-label'
+        )
+        .forEach(elemento => {
+            const categoria =
+                catMap[elemento.textContent.trim()];
 
-  let totalVisible = 0;
-  const allSections = ['lanche','almoco','vegana','doces','drinks'];
+            if (categoria) {
+                activeCats.push(categoria);
+            }
+        });
 
-  allSections.forEach(cat => {
-    const section = document.getElementById('sec-' + cat);
-    const items   = section.querySelectorAll('.restaurant-item');
-    let   sectionVisible = 0;
+    const slider =
+        document.getElementById('price-slider');
 
-    items.forEach((item, idx) => {
-      const restData = restaurantData[cat][idx];
-      if (!restData) return;
+    const maxPrice =
+        parseInt(slider.value);
 
-      if (activeCats.length > 0 && !activeCats.includes(cat)) {
-        item.style.display = 'none';
-        return;
-      }
+    // Mantém o preço para filtrar os itens do cardápio.
+    filtroPrecoMaximo = maxPrice;
 
-      const minRestPrice = Math.min(...restData.items.map(i => i.price));
-      if (minRestPrice > maxPrice) {
-        item.style.display = 'none';
-        return;
-      }
+    const activeChips = [];
 
-      if (activeChips.length > 0) {
-        const haystack = (restData.name + ' ' + restData.items.map(i => i.name).join(' ')).toLowerCase();
-        const matches  = activeChips.some(chip => haystack.includes(chip));
-        if (!matches) {
-          item.style.display = 'none';
-          return;
+    document
+        .querySelectorAll('.chip.active')
+        .forEach(elemento => {
+            activeChips.push(
+                elemento.textContent.trim().toLowerCase()
+            );
+        });
+
+    let totalVisible = 0;
+
+    const allSections = [
+        'lanche',
+        'almoco',
+        'vegana',
+        'doces',
+        'drinks'
+    ];
+
+    allSections.forEach(categoria => {
+        const section =
+            document.getElementById(
+                'sec-' + categoria
+            );
+
+        const cards =
+            section.querySelectorAll(
+                '.restaurant-item'
+            );
+
+        let sectionVisible = 0;
+
+        /*
+         * Se nenhuma categoria estiver marcada,
+         * todas serão consideradas selecionadas.
+         */
+        const categoriaSelecionada =
+            activeCats.length === 0 ||
+            activeCats.includes(categoria);
+
+        cards.forEach((card, indice) => {
+            const restaurante =
+                restaurantData[categoria][indice];
+
+            if (!restaurante) {
+                return;
+            }
+
+            // Esconde restaurantes de categorias não marcadas.
+            if (!categoriaSelecionada) {
+                card.style.display = 'none';
+                return;
+            }
+
+            /*
+             * O restaurante aparece se possuir pelo menos
+             * um item dentro do preço selecionado.
+             */
+            const possuiItemNoPreco =
+                restaurante.items.some(
+                    item => item.price <= maxPrice
+                );
+
+            if (!possuiItemNoPreco) {
+                card.style.display = 'none';
+                return;
+            }
+
+            // Aplica os chips adicionais, caso existam.
+            if (activeChips.length > 0) {
+                const textoPesquisa = (
+                    restaurante.name +
+                    ' ' +
+                    restaurante.items
+                        .map(item => item.name)
+                        .join(' ')
+                ).toLowerCase();
+
+                const correspondeAChip =
+                    activeChips.some(chip =>
+                        textoPesquisa.includes(chip)
+                    );
+
+                if (!correspondeAChip) {
+                    card.style.display = 'none';
+                    return;
+                }
+            }
+
+            card.style.display = '';
+            sectionVisible++;
+            totalVisible++;
+        });
+
+        // Ordena os cards visíveis pela avaliação.
+        if (
+            filterBestRated &&
+            sectionVisible > 0
+        ) {
+            const lista =
+                section.querySelector(
+                    '.restaurant-list'
+                );
+
+            const cardsOrdenados =
+                Array.from(
+                    lista.querySelectorAll(
+                        '.restaurant-item'
+                    )
+                );
+
+            cardsOrdenados.sort((cardA, cardB) => {
+                const obterAvaliacao = elemento => {
+                    const texto = elemento
+                        .querySelector(
+                            '.restaurant-item-rating'
+                        )
+                        .textContent;
+
+                    const numero =
+                        texto.match(/[\d.]+/);
+
+                    return numero
+                        ? parseFloat(numero[0])
+                        : 0;
+                };
+
+                return (
+                    obterAvaliacao(cardB) -
+                    obterAvaliacao(cardA)
+                );
+            });
+
+            cardsOrdenados.forEach(card => {
+                lista.appendChild(card);
+            });
         }
-      }
 
-      item.style.display = '';
-      sectionVisible++;
-      totalVisible++;
+        /*
+         * Esta é a correção principal:
+         * todas as seções selecionadas recebem "active".
+         */
+        const deveMostrarSecao =
+            categoriaSelecionada &&
+            sectionVisible > 0;
+
+        section.classList.toggle(
+            'active',
+            deveMostrarSecao
+        );
+
+        section.style.display =
+            deveMostrarSecao ? '' : 'none';
     });
 
-    if (filterBestRated && sectionVisible > 0) {
-      const list = section.querySelector('.restaurant-list');
-      const cards = Array.from(list.querySelectorAll('.restaurant-item'));
-      cards.sort((a, b) => {
-        const ratingOf = el => {
-          const txt = el.querySelector('.restaurant-item-rating').textContent;
-          return parseFloat(txt.match(/[\d.]+/)[0]);
+    /*
+     * Marca no menu principal todas as categorias
+     * selecionadas, e não somente a primeira.
+     */
+    const categoriasParaMostrar =
+        activeCats.length > 0
+            ? activeCats
+            : allSections;
+
+    document
+        .querySelectorAll('.cat-item')
+        .forEach(elemento => {
+            const label = elemento
+                .querySelector('.cat-label')
+                .textContent
+                .trim();
+
+            const categoria = {
+                'Lanche': 'lanche',
+                'Almoço': 'almoco',
+                'Vegana': 'vegana',
+                'Doces': 'doces',
+                'Drinks': 'drinks'
+            }[label];
+
+            elemento.classList.toggle(
+                'active',
+                categoriasParaMostrar.includes(
+                    categoria
+                )
+            );
+        });
+
+    const partesFiltro = [];
+
+    if (activeCats.length > 0) {
+        const nomesCategorias = {
+            lanche: 'Lanches',
+            almoco: 'Almoço',
+            vegana: 'Vegana',
+            doces: 'Doces',
+            drinks: 'Drinks'
         };
-        return ratingOf(b) - ratingOf(a);
-      });
-      cards.forEach(c => list.appendChild(c));
+
+        partesFiltro.push(
+            activeCats
+                .map(categoria =>
+                    nomesCategorias[categoria]
+                )
+                .join(', ')
+        );
     }
 
-    section.style.display = (sectionVisible === 0 && activeCats.length > 0) ? 'none' : '';
-  });
+    if (maxPrice < 100) {
+        partesFiltro.push(
+            'até R$' + maxPrice
+        );
+    }
 
-  const targetCat = activeCats.length > 0 ? activeCats[0] : 'lanche';
-  document.querySelectorAll('.cat-section').forEach(s => s.classList.remove('active'));
-  document.getElementById('sec-' + targetCat).classList.add('active');
-  document.querySelectorAll('.cat-item').forEach(el => {
-    const label = el.querySelector('.cat-label').textContent.trim();
-    const key   = { 'Lanche':'lanche','Almoço':'almoco','Vegana':'vegana','Doces':'doces','Drinks':'drinks' }[label];
-    el.classList.toggle('active', key === targetCat);
-  });
+    if (filterBestRated) {
+        partesFiltro.push(
+            'melhor avaliados'
+        );
+    }
 
-  const parts = [];
-  if (activeCats.length) parts.push(activeCats.map(c => ({lanche:'Lanches',almoco:'Almoço',vegana:'Vegana',doces:'Doces',drinks:'Drinks'}[c])).join(', '));
-  if (maxPrice < 100)    parts.push('até R$' + maxPrice);
-  if (filterBestRated)   parts.push('melhor avaliados');
-  const banner = document.getElementById('filter-banner');
-  const bannerText = document.getElementById('filter-banner-text');
-  bannerText.textContent = parts.length ? '🔍 Filtro: ' + parts.join(' · ') : '🔍 Filtro aplicado';
-  banner.classList.add('visible');
+    const banner =
+        document.getElementById(
+            'filter-banner'
+        );
 
-  goTo('home');
+    const bannerText =
+        document.getElementById(
+            'filter-banner-text'
+        );
+
+    if (totalVisible === 0) {
+        bannerText.textContent =
+            'Nenhum restaurante encontrado com esses filtros';
+    } else {
+        bannerText.textContent =
+            partesFiltro.length > 0
+                ? '🔍 Filtro: ' +
+                  partesFiltro.join(' · ')
+                : '🔍 Todas as categorias';
+    }
+
+    banner.classList.add('visible');
+
+    goTo('home');
 }
 
 function clearFilter() {
