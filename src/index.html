@@ -89,6 +89,66 @@
       <div class="modal-rest-img" id="modal-rest-img" style="background:linear-gradient(135deg,#ffecd2,#fcb69f);">🍕</div>
       <div class="modal-rating" id="modal-rest-rating">⭐ 5.0</div>
 
+      <div class="review-actions">
+        <button class="review-button" onclick="abrirFormularioAvaliacao()">
+            Avaliar restaurante
+        </button>
+
+        <button
+          class="review-button secondary"
+          id="show-reviews-button"
+          onclick="alternarAvaliacoes()"
+        >
+          Ver avaliações
+      </button>
+    </div>
+
+    <div class="review-form" id="review-form">
+        <div class="review-form-title">
+            Avaliar <span id="review-rest-name"></span>
+        </div>
+
+        <div class="review-stars" id="review-stars">
+            <button onclick="selecionarNota(1)">☆</button>
+            <button onclick="selecionarNota(2)">☆</button>
+            <button onclick="selecionarNota(3)">☆</button>
+            <button onclick="selecionarNota(4)">☆</button>
+            <button onclick="selecionarNota(5)">☆</button>
+        </div>
+
+        <textarea
+            id="review-comment"
+            placeholder="Conte como foi sua experiência"
+            maxlength="500"
+        ></textarea>
+
+        <div id="review-message"></div>
+
+        <div class="review-form-buttons">
+            <button class="review-cancel"
+                    onclick="fecharFormularioAvaliacao()">
+                Cancelar
+            </button>
+
+            <button class="review-submit"
+                    onclick="publicarAvaliacao()">
+                Publicar
+            </button>
+        </div>
+    </div>
+
+    <div class="reviews-section" id="reviews-section">
+      <div class="reviews-title">
+          Avaliações dos usuários
+      </div>
+
+      <div id="reviews-list">
+          <div class="reviews-empty">
+              Carregando avaliações...
+          </div>
+      </div>
+    </div>
+
       <div style="font-size:15px;font-weight:900;color:var(--text-dark);margin-bottom:12px;">Simular Pedido</div>
       <div class="sim-items" id="sim-items-list"></div>
 
@@ -134,8 +194,8 @@
     <div class="welcome-content">
       <div class="welcome-logo">FOMEZERO</div>
       <div class="welcome-subtitle">Descubra Sabores Incríveis Perto De Você Agora!</div>
-      <button class="btn btn-primary" onclick="goTo('onboarding')">Login</button>
-      <button class="btn btn-secondary" onclick="goTo('onboarding')">Cadastro</button>
+      <button class="btn btn-primary" onclick="goTo('login')">Login</button>
+      <button class="btn btn-secondary" onclick="goTo('signup')"> Cadastro </button>
     </div>
   </div>
 
@@ -194,7 +254,6 @@
       <div class="social-btns">
         <button class="social-btn">G</button>
         <button class="social-btn">f</button>
-        <button class="social-btn">☝️</button>
       </div>
       <div class="register-link">Não tem uma conta? <a onclick="goTo('signup')">Registrar-se</a></div>
     </div>
@@ -218,37 +277,73 @@
     <div class="form-card">
       <div class="field-group">
         <label class="field-label">Nome completo</label>
-        <input class="form-input" type="text" placeholder="example">
+        <input
+          class="form-input"
+          type="text"
+          id="signup-nome"
+          placeholder="Digite seu nome completo"
+          required
+      >
       </div>
       <div class="field-group">
         <label class="field-label">Senha</label>
         <div class="input-wrap">
-          <input class="form-input" type="password" id="signup-pwd" placeholder="••••••••••••••" style="padding-right:44px;">
+          <input
+            class="form-input"
+            type="password"
+            id="signup-pwd"
+            placeholder="••••••••"
+            style="padding-right:44px;"
+            minlength="6"
+            required
+        >
           <button class="eye-btn" onclick="togglePwd('signup-pwd')">👁️</button>
         </div>
       </div>
       <div class="field-group">
         <label class="field-label">Email</label>
-        <input class="form-input" type="email" placeholder="example@example.com">
+        <input
+          class="form-input"
+          type="email"
+          id="signup-email"
+          placeholder="example@example.com"
+          required
+        >
       </div>
       <div class="field-group">
-        <label class="field-label">Número de Telefone</label>
+        <input
+          class="form-input"
+          type="tel"
+          id="signup-telefone"
+          placeholder="+55 79 99999-9999"
+        >
         <input class="form-input" type="tel" placeholder="+ 55 00 12345 - 6789">
       </div>
       <div class="field-group">
-        <label class="field-label">Data de nascimento</label>
+        <input
+          class="form-input"
+          type="date"
+          id="signup-nascimento"
+        >
         <input class="form-input" type="text" placeholder="DD / MM / AAAA">
       </div>
       <div class="terms-text">
         Ao clicar em Registrar, você concorda com os
         <a href="#">Termos de Uso</a> e <a href="#">Políticas de Privacidade</a>.
       </div>
-      <button class="btn btn-login" onclick="goTo('home')">Registrar</button>
+      <button
+        class="btn btn-login"
+        id="signup-button"
+        onclick="cadastrarUsuario()"
+      >
+    Registrar
+</button>
+
+<div id="signup-mensagem" class="form-message"></div>
       <div class="or-text">ou entre com</div>
       <div class="social-btns">
         <button class="social-btn">G</button>
         <button class="social-btn">f</button>
-        <button class="social-btn">☝️</button>
       </div>
       <div class="register-link">Não tem uma conta? <a onclick="goTo('signup')">Registrar-se</a></div>
     </div>

@@ -59,6 +59,14 @@ const restaurantData = {
 
 let simQtys = [];
 
+const API_BASE_URL = 'http://localhost:8080/api';
+
+const API_AVALIACOES = `${API_BASE_URL}/avaliacoes`;
+const API_USUARIOS = `${API_BASE_URL}/usuarios`;
+
+let restauranteAvaliacaoAtual = null;
+let notaSelecionada = 0;
+
 /* ── Navigation ── */
 function goTo(id) {
   document.getElementById(currentScreen).classList.remove('active');
@@ -103,6 +111,126 @@ function applySlide(data) {
 function togglePwd(id) {
   const el = document.getElementById(id);
   el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+async function cadastrarUsuario() {
+    const nome =
+        document.getElementById('signup-nome').value.trim();
+
+    const email =
+        document.getElementById('signup-email').value.trim();
+
+    const senha =
+        document.getElementById('signup-pwd').value;
+
+    const telefone =
+        document.getElementById('signup-telefone').value.trim();
+
+    const dataNascimento =
+        document.getElementById('signup-nascimento').value;
+
+    const mensagem =
+        document.getElementById('signup-mensagem');
+
+    const botao =
+        document.getElementById('signup-button');
+
+    mensagem.textContent = '';
+    mensagem.className = 'form-message';
+
+    if (!nome || !email || !senha) {
+        mostrarMensagemCadastro(
+            'Preencha nome, e-mail e senha.',
+            'erro'
+        );
+        return;
+    }
+
+    if (senha.length < 6) {
+        mostrarMensagemCadastro(
+            'A senha deve possuir pelo menos 6 caracteres.',
+            'erro'
+        );
+        return;
+    }
+
+    const usuario = {
+        nome: nome,
+        email: email,
+        senha: senha,
+        telefone: telefone || null,
+        dataNascimento: dataNascimento || null
+    };
+
+    try {
+        botao.disabled = true;
+        botao.textContent = 'Cadastrando...';
+
+        const resposta = await fetch(API_USUARIOS, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(usuario)
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.text();
+
+            mostrarMensagemCadastro(
+                erro || 'Não foi possível realizar o cadastro.',
+                'erro'
+            );
+
+            return;
+        }
+
+        const usuarioCadastrado = await resposta.json();
+
+        sessionStorage.setItem(
+            'usuario',
+            JSON.stringify(usuarioCadastrado)
+        );
+
+        mostrarMensagemCadastro(
+            'Cadastro realizado com sucesso!',
+            'sucesso'
+        );
+
+        limparFormularioCadastro();
+
+        setTimeout(() => {
+            goTo('login');
+        }, 1200);
+
+    } catch (erro) {
+        console.error('Erro ao cadastrar usuário:', erro);
+
+        mostrarMensagemCadastro(
+            'Não foi possível conectar ao backend.',
+            'erro'
+        );
+
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'Registrar';
+    }
+}
+
+function mostrarMensagemCadastro(texto, tipo) {
+    const mensagem =
+        document.getElementById('signup-mensagem');
+
+    mensagem.textContent = texto;
+    mensagem.className = `form-message ${tipo}`;
+}
+
+function limparFormularioCadastro() {
+    document.getElementById('signup-nome').value = '';
+    document.getElementById('signup-email').value = '';
+    document.getElementById('signup-pwd').value = '';
+    document.getElementById('signup-telefone').value = '';
+    document.getElementById('signup-nascimento').value = '';
 }
 
 /* ── Home categories ── */
@@ -269,32 +397,87 @@ function closePanels() {
 
 /* ── Restaurant Modal ── */
 function openRestModal(cat, idx) {
-  const rest = restaurantData[cat][idx];
-  document.getElementById('modal-rest-name').textContent = rest.name;
-  document.getElementById('modal-rest-img').style.background = rest.bg;
-  document.getElementById('modal-rest-img').textContent = rest.emoji;
-  document.getElementById('modal-rest-rating').textContent = rest.rating;
+    const rest = restaurantData[cat][idx];
 
-  simQtys = rest.items.map(() => 0);
+    restauranteAvaliacaoAtual = rest.name;
+    notaSelecionada = 0;
 
-  const list = document.getElementById('sim-items-list');
-  list.innerHTML = rest.items.map((item, i) => `
-    <div class="sim-item">
-      <div class="sim-item-emoji">${item.emoji}</div>
-      <div class="sim-item-info">
-        <div class="sim-item-name">${item.name}</div>
-        <div class="sim-item-price">R$${item.price.toFixed(2).replace('.',',')}</div>
-      </div>
-      <div class="sim-item-qty">
-        <button class="qty-btn" onclick="changeQty(${i},-1,${JSON.stringify(rest.items).replace(/"/g,'&quot;')})">−</button>
-        <span class="qty-num" id="qty-${i}">0</span>
-        <button class="qty-btn" onclick="changeQty(${i},1,${JSON.stringify(rest.items).replace(/"/g,'&quot;')})">+</button>
-      </div>
-    </div>
-  `).join('');
+    document.getElementById('modal-rest-name').textContent =
+        rest.name;
 
-  updateSimTotal(rest.items);
-  document.getElementById('rest-modal').classList.add('open');
+    document.getElementById('modal-rest-img').style.background =
+        rest.bg;
+
+    document.getElementById('modal-rest-img').textContent =
+        rest.emoji;
+
+    document.getElementById('modal-rest-rating').textContent =
+        'Carregando avaliações...';
+
+    document.getElementById('review-rest-name').textContent =
+        rest.name;
+
+    document.getElementById('review-form')
+        .classList.remove('visible');
+
+    document.getElementById('reviews-section')
+        .classList.add('visible');
+
+    atualizarEstrelas();
+
+    simQtys = rest.items.map(() => 0);
+
+    const list = document.getElementById('sim-items-list');
+
+    list.innerHTML = rest.items.map((item, i) => `
+        <div class="sim-item">
+            <div class="sim-item-emoji">${item.emoji}</div>
+
+            <div class="sim-item-info">
+                <div class="sim-item-name">${item.name}</div>
+
+                <div class="sim-item-price">
+                    R$${item.price.toFixed(2).replace('.', ',')}
+                </div>
+            </div>
+
+            <div class="sim-item-qty">
+                <button
+                    class="qty-btn"
+                    onclick="changeQty(
+                        ${i},
+                        -1,
+                        ${JSON.stringify(rest.items)
+                            .replace(/"/g, '&quot;')}
+                    )"
+                >
+                    −
+                </button>
+
+                <span class="qty-num" id="qty-${i}">0</span>
+
+                <button
+                    class="qty-btn"
+                    onclick="changeQty(
+                        ${i},
+                        1,
+                        ${JSON.stringify(rest.items)
+                            .replace(/"/g, '&quot;')}
+                    )"
+                >
+                    +
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    updateSimTotal(rest.items);
+
+    document.getElementById('rest-modal')
+        .classList.add('open');
+
+    carregarResumoAvaliacao();
+    carregarAvaliacoes();
 }
 
 function changeQty(i, delta, items) {
@@ -310,6 +493,219 @@ function updateSimTotal(items) {
 
 function closeModal() {
   document.getElementById('rest-modal').classList.remove('open');
+}
+
+function abrirFormularioAvaliacao() {
+    document.getElementById('review-form').classList.add('visible');
+}
+
+function fecharFormularioAvaliacao() {
+    document.getElementById('review-form').classList.remove('visible');
+}
+
+function selecionarNota(nota) {
+    notaSelecionada = nota;
+    atualizarEstrelas();
+}
+
+function atualizarEstrelas() {
+    const botoes = document.querySelectorAll('#review-stars button');
+
+    botoes.forEach((botao, indice) => {
+        botao.textContent = indice < notaSelecionada ? '★' : '☆';
+        botao.classList.toggle(
+            'selected',
+            indice < notaSelecionada
+        );
+    });
+}
+
+async function publicarAvaliacao() {
+    const mensagem = document.getElementById('review-message');
+    const comentario =
+            document.getElementById('review-comment').value.trim();
+
+    if (notaSelecionada === 0) {
+        mensagem.textContent = 'Selecione uma nota de 1 a 5.';
+        return;
+    }
+
+    const avaliacao = {
+        restaurante: restauranteAvaliacaoAtual,
+        usuarioNome: 'Maria da Silva',
+        usuarioEmail: 'maria@email.com',
+        nota: notaSelecionada,
+        comentario: comentario
+    };
+
+    try {
+        const resposta = await fetch(API_AVALIACOES, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(avaliacao)
+        });
+
+        if (!resposta.ok) {
+            mensagem.textContent = await resposta.text();
+            return;
+        }
+
+        mensagem.textContent = 'Avaliação publicada!';
+        document.getElementById('review-comment').value = '';
+
+        await carregarResumoAvaliacao();
+        await carregarAvaliacoes();
+
+        setTimeout(fecharFormularioAvaliacao, 800);
+    } catch (erro) {
+        console.error(erro);
+        mensagem.textContent = 'Não foi possível conectar ao servidor.';
+    }
+}
+
+async function carregarResumoAvaliacao() {
+    const nome = encodeURIComponent(restauranteAvaliacaoAtual);
+    const elementoNota =
+        document.getElementById('modal-rest-rating');
+
+    try {
+        const resposta = await fetch(
+            `${API_AVALIACOES}/restaurante/${nome}/media`
+        );
+
+        if (!resposta.ok) {
+            throw new Error('Erro ao carregar resumo');
+        }
+
+        const resumo = await resposta.json();
+
+        const quantidade = resumo.quantidade;
+        const botaoAvaliacoes =
+          document.getElementById('show-reviews-button');
+
+        botaoAvaliacoes.textContent =
+            `Ver avaliações (${quantidade})`;
+
+        const textoAvaliacoes =
+            quantidade === 1 ? 'avaliação' : 'avaliações';
+
+        if (quantidade === 0) {
+            elementoNota.textContent = 'Ainda sem avaliações';
+            return;
+        }
+
+        elementoNota.textContent =
+            `⭐ ${resumo.media.toFixed(1)} · ` +
+            `${quantidade} ${textoAvaliacoes}`;
+
+    } catch (erro) {
+        console.error(erro);
+        elementoNota.textContent =
+            'Não foi possível carregar as avaliações';
+    }
+}
+
+async function alternarAvaliacoes() {
+    const secao = document.getElementById('reviews-section');
+    secao.classList.toggle('visible');
+
+    if (secao.classList.contains('visible')) {
+        await carregarAvaliacoes();
+    }
+}
+
+async function carregarAvaliacoes() {
+    const nome = encodeURIComponent(restauranteAvaliacaoAtual);
+    const lista = document.getElementById('reviews-list');
+
+    lista.innerHTML =
+        '<div class="reviews-empty">Carregando avaliações...</div>';
+
+    try {
+        const resposta = await fetch(
+            `${API_AVALIACOES}/restaurante/${nome}`
+        );
+
+        if (!resposta.ok) {
+            throw new Error('Erro ao carregar avaliações');
+        }
+
+        const avaliacoes = await resposta.json();
+
+        if (avaliacoes.length === 0) {
+            lista.innerHTML = `
+                <div class="reviews-empty">
+                    Este restaurante ainda não possui avaliações.
+                    Seja a primeira pessoa a avaliar!
+                </div>
+            `;
+            return;
+        }
+
+        lista.innerHTML = avaliacoes.map(avaliacao => {
+            const data = new Date(avaliacao.data)
+                .toLocaleDateString('pt-BR');
+
+            const estrelasPreenchidas =
+                '★'.repeat(avaliacao.nota);
+
+            const estrelasVazias =
+                '☆'.repeat(5 - avaliacao.nota);
+
+            return `
+                <div class="review-item">
+                    <div class="review-item-header">
+                        <div class="review-user">
+                            <div class="review-avatar">
+                                ${obterIniciais(avaliacao.usuarioNome)}
+                            </div>
+
+                            <div>
+                                <strong>${avaliacao.usuarioNome}</strong>
+                                <div class="review-item-date">${data}</div>
+                            </div>
+                        </div>
+
+                        <div class="review-item-stars">
+                            ${estrelasPreenchidas}${estrelasVazias}
+                        </div>
+                    </div>
+
+                    <div class="review-item-comment">
+                        ${avaliacao.comentario || 'Sem comentário.'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (erro) {
+        console.error(erro);
+
+        lista.innerHTML = `
+            <div class="reviews-empty">
+                Não foi possível carregar as avaliações.
+            </div>
+        `;
+    }
+}
+
+function obterIniciais(nome) {
+    if (!nome) {
+        return '?';
+    }
+
+    const partes = nome.trim().split(' ');
+
+    if (partes.length === 1) {
+        return partes[0].charAt(0).toUpperCase();
+    }
+
+    return (
+        partes[0].charAt(0) +
+        partes[partes.length - 1].charAt(0)
+    ).toUpperCase();
 }
 
 /* ── Search ── */
